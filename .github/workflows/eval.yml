@@ -29,7 +29,9 @@ jobs:
       - name: 安装依赖
         run: pip install -e .
       - name: 评测集质量门禁(加载/id查重/必填字段)
-        run: python -c "from evalsets import load_eval_cases; cs = load_eval_cases(); print(f'评测集校验通过: {len(cs)} 条')"
+        # 用块标量(run: |)承载脚本: 行内写法里 python 代码的"冒号+空格"会被 YAML 当成键值分隔符导致整个文件解析失败
+        run: |
+          python -c "from evalsets import load_eval_cases; cs = load_eval_cases(); print(f'评测集校验通过: {len(cs)} 条')"
       - name: mock 冒烟(不调 API)
         # --ignore: test_judge 依赖 deepeval,零密钥流水线不装该可选依赖;收集它会报 ImportError
         run: SUT_MODE=mock pytest -m smoke -v --ignore=tests/test_judge.py
