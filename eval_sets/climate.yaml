@@ -1,0 +1,122 @@
+# climate 域 —— 目标 30 条(常规10 / 模糊10 / 边界5 / 多意图5)
+# 以下为参考样例,补齐其余用例。字段与断言语义见 SCHEMA.md。
+
+- id: climate-normal-001
+  input: "把空调调到22度"
+  expect:
+    intents:
+      - intent: climate.set_temp
+        slots: {temp: 22}
+  tags: [normal]
+  note: 显式参数指令,最基础的确定性断言
+
+- id: climate-normal-002
+  input: "空调风开到四档"
+  expect:
+    intents:
+      - intent: climate.set_fan
+        slots: {fan: 4}
+  tags: [normal]
+  note: 中文数字→数值槽位
+
+- id: climate-fuzzy-001
+  input: "有点冷"
+  expect:
+    intents:
+      - intent: climate.set_temp
+  tags: [fuzzy]
+  note: 模糊表达只断言意图方向;调节幅度是生成式行为,合理性交 L2 judge 层
+
+- id: climate-fuzzy-002
+  input: "有点热"
+  expect:
+    intents:
+      - intent: climate.set_temp
+  tags: [fuzzy]
+
+- id: climate-fuzzy-003
+  input: "空调温度有点高"
+  expect:
+    intents:
+      - intent: climate.set_temp
+  tags: [fuzzy]
+
+- id: climate-fuzzy-004
+  input: "关掉空调吹我脸上这个"
+  expect:
+    intents:
+      - intent: climate.power
+  tags: [fuzzy]
+
+- id: climate-fuzzy-005
+  input: "感觉空调风有点大"
+  expect:
+    intents:
+      - intent: climate.set_fan
+  tags: [fuzzy]
+
+- id: climate-boundary-001
+  input: "把空调调到零度"
+  expect:
+    intents:
+      - intent: climate.set_temp
+        slots: {temp: 16}
+  tags: [boundary]
+  note: 下界截断——需求要求越界参数截断到 16-32 边界;播报中是否说明截断由 judge 层检查
+
+- id: climate-boundary-002
+  input: "空调给我开到50度"
+  expect:
+    intents:
+      - intent: climate.set_temp
+        slots: {temp: 32}
+  tags: [boundary]
+  note: 上界截断
+
+- id: climate-boundary-003
+  input: "空调给我开到十档"
+  expect:
+    intents:
+      - intent: climate.set_fan
+        slots: {fan: 7}
+  tags: [boundary]
+
+- id: climate-boundary-004
+  input: "空调给我开到最低档"
+  expect:
+    intents:
+      - intent: climate.set_fan
+        slots: {fan: 1}
+  tags: [boundary_value]
+  note: 合法边界值本身(最低档=1在1-7范围内),无截断发生——不适用"截断说明"judge维度,L1断精确值即可;曾因标签粒度不足被误判
+
+- id: climate-boundary-005
+  input: "空调给我开到最大"
+  expect:
+    intents:
+      - intent: climate.set_fan
+        slots: {fan: 7}
+  tags: [boundary_value]
+  note: 歧义话术——首轮 SUT 解析为风量,经需求澄清定产品规则:"最大/最小"未指明对象时按风量处理(v0.2.0写入需求);"最大"=7合法无截断,不适用截断说明维度
+
+- id: climate-compound-001
+  input: "空调调到22度,座椅加热开二挡"
+  expect:
+    intents:
+      - intent: climate.set_temp
+        slots: {temp: 22}
+      - intent: seat.heat
+        slots: {level: 2}
+  tags: [compound]
+  note: 一句话双意图,验证 intents 数组拆分与槽位归属不串
+
+- id: climate-compound-002
+  input: "关掉空调,座椅加热开最小挡"
+  expect:
+    intents:
+      - intent: climate.power
+        slots: {power: "off"}
+      - intent: seat.heat
+        slots: {level: 1}
+  tags: [compound]
+  note: 口语化复合指令;power 槽位是字符串 "on"/"off"(SCHEMA 约定),不能写布尔值

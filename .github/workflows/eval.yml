@@ -1,0 +1,70 @@
+# CI 回归门禁: 代码推送到 GitHub 后自动在全新虚拟机上跑评测
+# 分层执行策略(与本地一致,成本/时效权衡):
+#   - 每次 push/PR: 冒烟 + L1 规则断言(免费模型,~3分钟,快速反馈)
+#   - 手动触发(Actions 页面 Run workflow): L2 judge 层 + 汇总报告(较慢较贵,按需跑)
+# 密钥安全: LLM_API_KEY 存在 GitHub Secrets,只注入虚拟机内存,不进代码库
+
+name: eval
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch: # 允许在 Actions 页面手动触发(跑 L2+报告)
+
+concurrency:
+  group: eval-${{ github.ref }}
+  cancel-in-progress: true # 同分支新推送取消旧任务,省额度
+
+jobs:
+  l1-smoke-rule:
+    name: L1 冒烟+规则断言(每次push)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: 安装依赖
+        run: pip install -e .
+      - name: 写入运行配置(密钥来自 GitHub Secrets)
+        run: |
+          cat > .env <<EOF
+          LLM_API_KEY=${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+          SUT_MODEL=glm-4-flash
+          JUDGE_MODEL=glm-4.5-flash
+          EOF
+      - name: 冒烟 + L1 规则断言
+        run: pytest -m "smoke or rule" -v --tb=short
+
+  l2-judge-report:
+    name: L2 Judge + 汇总报告(手动触发)
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - name: 安装依赖(含 deepeval)
+        run: pip install -e ".[judge]"
+      - name: 写入运行配置(密钥来自 GitHub Secrets)
+        run: |
+          cat > .env <<EOF
+          LLM_API_KEY=${{ secrets.LLM_API_KEY }}
+          LLM_BASE_URL=https://open.bigmodel.cn/api/paas/v4
+          SUT_MODEL=glm-4-flash
+          JUDGE_MODEL=glm-4.5-flash
+          EOF
+      - name: L2 judge 层
+        run: pytest -m judge -v --tb=short
+      - name: 汇总报告
+        run: python scripts/report.py
+      - name: 上传报告产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-reports
+          path: reports/

@@ -1,0 +1,9 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+allure-results/
+allure-report/
+*.egg-info/
+.DS_Store

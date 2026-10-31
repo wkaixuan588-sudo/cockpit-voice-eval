@@ -1,0 +1,10 @@
+# chitchat 域 —— 目标 10 条(开放问答)
+# L1 只断言意图落在 chat.qa;回复质量(相关性/自然度)是 L2 judge 层的主战场。
+
+- id: chitchat-001
+  input: "今天穿什么衣服合适"
+  expect:
+    intents:
+      - intent: chat.qa
+  tags: [qa]
+  note: 开放闲聊,L1 仅守底线(不误触发车控),质量交 judge

@@ -1,0 +1,19 @@
+# navigation 域 —— 目标 20 条(常规10 / 多轮5(待P1.2) / 专名边界5)
+# 以下为参考样例。多轮上下文用例需 SUT 支持 history,先不写。
+
+- id: navigation-normal-001
+  input: "导航去北京西站"
+  expect:
+    intents:
+      - intent: navigation.start
+        slots: {dest: "北京西站"}
+  tags: [normal]
+  note: 显式目的地
+
+- id: navigation-fuzzy-001
+  input: "我饿了,附近找点好吃的"
+  expect:
+    intents:
+      - intent: navigation.start
+  tags: [fuzzy]
+  note: 隐式需求→POI搜索,只断言意图;搜的品类是否合理交 judge 层

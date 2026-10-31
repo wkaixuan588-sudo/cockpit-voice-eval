@@ -1,0 +1,33 @@
+[project]
+name = "cockpit-voice-eval"
+version = "0.1.0"
+description = "座舱语音助手分层评测：规则断言 + LLM-as-Judge + 人工校准 + CI 回归"
+requires-python = ">=3.10"
+dependencies = [
+    "openai>=1.40",
+    "python-dotenv>=1.0",
+    "pyyaml>=6.0",
+    "pytest>=8.0",
+]
+
+[project.optional-dependencies]
+# P2 judge 层再安装: pip install -e ".[judge]"
+judge = ["deepeval>=2.0"]
+report = ["allure-pytest>=2.13"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["sut", "judge"]
+py-modules = ["evalsets"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+markers = [
+    "smoke: 冒烟集(SUT可用性)",
+    "rule: L1 规则断言层",
+    "judge: L2 LLM-as-Judge 层(产生API费用)",
+]
+testpaths = ["tests"]
