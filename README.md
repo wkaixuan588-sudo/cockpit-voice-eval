@@ -1,8 +1,6 @@
 # cockpit-voice-eval — 座舱语音助手分层评测
 
-<!-- 仓库推上 GitHub 后取消注释并改成你的仓库地址:
-[![eval](https://github.com/<你的用户名>/cockpit-voice-eval/actions/workflows/eval.yml/badge.svg)](https://github.com/<你的用户名>/cockpit-voice-eval/actions/workflows/eval.yml)
--->
+[![eval](https://github.com/wkaixuan588-sudo/cockpit-voice-eval/actions/workflows/eval.yml/badge.svg)](https://github.com/wkaixuan588-sudo/cockpit-voice-eval/actions/workflows/eval.yml)
 
 用 LLM API 构造"星河X5 车载语音助手"作为被测系统(SUT),对它落地座舱语音测试方法论:
 **分层评测集 → 规则断言(L1) + LLM-as-Judge(L2) + 人工校准(P3,进行中) → CI 回归**。
