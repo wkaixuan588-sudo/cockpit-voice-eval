@@ -35,7 +35,7 @@ L1 规则断言 —— 全量 23 条(pytest -m rule), 零 judge 成本
 L2 LLM-as-Judge —— 按 tag 映射的子集 15 条(pytest -m judge), glm-4.5-flash 当裁判
 L3 人工校准 —— 人标样本 vs judge 打分的一致率(P3)
       ▼
-Allure + 汇总报告(维度通过率 + badcase 清单) ← GitHub Actions 回归
+Allure + 汇总报告(维度通过率 + badcase 清单) ← GitHub Actions 轻量门禁(零密钥: 评测集校验+mock冒烟)
 ```
 
 **L1 的四种断言(按执行顺序)**:
@@ -179,5 +179,6 @@ SUT: glm-4-flash prompt v0.2.2, judge: glm-4.5-flash)
 - [x] P1 评测集(24条,持续补充) + L1 规则断言(含 xfail 已知缺陷管理) + 首轮缺陷发现记录
 - [x] P2 LLM-as-Judge 层(deepeval, 6维度rubric + judge_xfail机制 + 裁判性能治理:关thinking/60s超时)
 - [x] P3 人工校准(14项盲标,总体判定一致率93%,仲裁 F-009 裁判误判;车辆知识事实性保留人工抽检) + 汇总报告(scripts/report.py)
-- [ ] P4 CI(GitHub Actions 回归门禁) + 报告门面
+- [x] P4 轻量 CI(零密钥: 评测集质量门禁 + mock 冒烟,GitHub Actions)——成本分层决策:
+      CI 管结构与框架(免费无密钥),真模型评测按需本地跑,产出提交至 reports/ 作为证据
 - [ ] P5 可选: LLM 扩充评测集变体 / 双模型打擂台(glm-4.6 vs glm-4-flash 同评测集对比)
