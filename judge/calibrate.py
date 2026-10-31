@@ -105,21 +105,20 @@ def sample() -> None:
     print(f"标注文件: {ANN_FILE}\n数据文件: {DATA_FILE}")
 
 
-def report() -> None:
+def agreement_rows() -> list[dict] | None:
+    """返回人机逐项对比行(供校准报告与汇总报告共用);未标注或文件缺失时返回 None。"""
+    if not DATA_FILE.exists() or not ANN_FILE.exists():
+        return None
     data = yaml.safe_load(DATA_FILE.read_text(encoding="utf-8"))
     ann = yaml.safe_load(ANN_FILE.read_text(encoding="utf-8"))["items"]
     judge_map = {
         (it["id"], md["dimension"]): md
         for it in data["items"] for md in it.get("metrics", [])
     }
-
-    rows, unfilled = [], 0
+    rows = []
     for a in ann:
         md = judge_map.get((a["case_id"], a["dimension"]))
-        if md is None:
-            continue
-        if a.get("human_score_1to5") is None or a.get("human_pass") is None:
-            unfilled += 1
+        if md is None or a.get("human_score_1to5") is None or a.get("human_pass") is None:
             continue
         human_norm = (float(a["human_score_1to5"]) - 1) / 4  # 1-5 → 0-1
         judge_pass = md["judge_score"] >= md["threshold"]
@@ -132,11 +131,14 @@ def report() -> None:
             "judge_reason": md["judge_reason"],
             "comment": a.get("human_comment") or "",
         })
+    return rows or None
 
-    if unfilled:
-        print(f"提示: {unfilled} 项未标注,已跳过")
-    if not rows:
+
+def report() -> None:
+    rows = agreement_rows()
+    if rows is None:
         sys.exit("没有任何已标注项——先填写 judge/annotation.yaml 再跑 report")
+    data = yaml.safe_load(DATA_FILE.read_text(encoding="utf-8"))
 
     # 分维度统计
     dims = {}

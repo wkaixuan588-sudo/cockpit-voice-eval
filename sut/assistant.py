@@ -68,13 +68,17 @@ SYSTEM_PROMPT = """你是"星河X5"智能电动汽车的车载语音助手"小�
 
 @dataclass
 class SUTResponse:
-    """单轮交互结果。parsed 为 None 表示输出无法解析为 JSON(本身就是一个缺陷信号)。"""
+    """单轮交互结果。parsed 为 None 表示输出无法解析为 JSON(本身就是一个缺陷信号)。
+
+    retries 记录 JSON 契约兜底重试次数(0=一次成功),是契约稳定性指标的原始数据。
+    """
 
     parsed: dict | None
     raw: str
     latency_ms: float
     model: str
     prompt_version: str
+    retries: int = 0
 
 
 def _extract_json(text: str) -> dict | None:
@@ -129,6 +133,7 @@ class Assistant:
                 latency_ms=0.0, model=self.model, prompt_version=PROMPT_VERSION,
             )
         t0 = time.perf_counter()
+        retries = 0
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": text},
@@ -141,6 +146,7 @@ class Assistant:
             parsed = _extract_json(raw)
             if parsed is None:
                 # JSON 契约兜底: 带提醒重试一次(弱模型对输出格式遵循不稳定)
+                retries = 1
                 messages.append({"role": "assistant", "content": raw})
                 messages.append({"role": "user", "content": "请严格按系统要求的 JSON 格式重新输出,不要任何其他文字。"})
                 completion = self.client.chat.completions.create(
@@ -155,7 +161,7 @@ class Assistant:
             return SUTResponse(
                 parsed=None, raw=f"[APIError] {e}",
                 latency_ms=(time.perf_counter() - t0) * 1000,
-                model=self.model, prompt_version=PROMPT_VERSION,
+                model=self.model, prompt_version=PROMPT_VERSION, retries=retries,
             )
         return SUTResponse(
             parsed=parsed,
@@ -163,6 +169,7 @@ class Assistant:
             latency_ms=(time.perf_counter() - t0) * 1000,
             model=self.model,
             prompt_version=PROMPT_VERSION,
+            retries=retries,
         )
 
 
